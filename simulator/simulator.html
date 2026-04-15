@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS SAA-C03 Exam Simulator</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0a0e27;
+  color: #e0e0e0;
+  min-height: 100vh;
+}
+.container { max-width: 920px; margin: 0 auto; padding: 20px; }
+.header {
+  text-align: center; padding: 30px 0 20px;
+  border-bottom: 1px solid #1a1f4e; margin-bottom: 30px;
+}
+.header h1 {
+  font-size: 1.8em;
+  background: linear-gradient(135deg, #ff9900, #ffb84d);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+.header p { color: #8888aa; font-size: 0.95em; }
+.lang-switch {
+  position: absolute; top: 20px; right: 20px;
+  display: flex; gap: 4px; background: #12163a;
+  border-radius: 8px; padding: 4px; border: 1px solid #1a1f4e;
+}
+.lang-btn {
+  padding: 6px 14px; border: none; border-radius: 6px;
+  cursor: pointer; font-size: 0.85em; background: transparent; color: #888;
+  transition: all 0.2s;
+}
+.lang-btn.active { background: #ff9900; color: #000; font-weight: 600; }
+.lang-btn:hover:not(.active) { color: #ccc; }
+</style>
+</head>
+<body>
+<div style="position:relative;">
+  <div class="lang-switch">
+    <button class="lang-btn active" onclick="setLang('en')">🇬🇧 EN</button>
+    <button class="lang-btn" onclick="setLang('it')">🇮🇹 IT</button>
+  </div>
+</div>
+<div class="container">
+  <div class="header">
+    <h1>☁️ AWS SAA-C03 Simulator</h1>
+    <p>Solutions Architect Associate - Practice Exam</p>
+  </div>
+  <div id="app"></div>
+</div>
+<style>
+.menu { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:30px; }
+.menu button {
+  padding:12px 24px; border:1px solid #2a2f5e; background:#12163a;
+  color:#ccc; border-radius:8px; cursor:pointer; font-size:0.95em; transition:all 0.2s;
+}
+.menu button:hover { border-color:#ff9900; color:#ff9900; }
+.menu button.active { background:#ff9900; color:#000; border-color:#ff9900; font-weight:600; }
+.stats-bar {
+  display:flex; justify-content:space-between; align-items:center;
+  background:#12163a; padding:15px 20px; border-radius:10px;
+  margin-bottom:20px; flex-wrap:wrap; gap:10px;
+}
+.stat { text-align:center; }
+.stat-value { font-size:1.4em; font-weight:700; color:#ff9900; }
+.stat-label { font-size:0.75em; color:#8888aa; margin-top:2px; }
+.timer { font-size:1.3em; font-weight:600; color:#ff9900; font-variant-numeric:tabular-nums; }
+.progress-container { background:#1a1f4e; border-radius:6px; height:8px; margin-bottom:25px; overflow:hidden; }
+.progress-bar { height:100%; background:linear-gradient(90deg,#ff9900,#ffb84d); border-radius:6px; transition:width 0.3s; }
+.question-card {
+  background:#12163a; border-radius:12px; padding:30px;
+  margin-bottom:20px; border:1px solid #1a1f4e;
+}
+.q-number {
+  display:inline-block; background:#ff9900; color:#000;
+  padding:4px 12px; border-radius:20px; font-size:0.8em; font-weight:700; margin-bottom:15px;
+}
+.q-source {
+  display:inline-block; background:#1a1f4e; color:#8888aa;
+  padding:4px 10px; border-radius:20px; font-size:0.75em; margin-left:8px;
+}
+.q-category {
+  display:inline-block; background:#1a2a1a; color:#22c55e;
+  padding:4px 10px; border-radius:20px; font-size:0.75em; margin-left:8px;
+  border:1px solid #22c55e44;
+}
+.q-text { font-size:1.05em; line-height:1.6; margin-bottom:25px; color:#e8e8f0; }
+.answer-option {
+  display:flex; align-items:flex-start; gap:12px; padding:15px;
+  margin-bottom:10px; border:2px solid #1a1f4e; border-radius:10px;
+  cursor:pointer; transition:all 0.2s;
+}
+.answer-option:hover { border-color:#3a3f7e; background:#161a42; }
+.answer-option.selected { border-color:#ff9900; background:#1a1a3a; }
+.answer-option.correct { border-color:#22c55e; background:#0a2a1a; }
+.answer-option.incorrect { border-color:#ef4444; background:#2a0a0a; }
+.answer-option.show-correct { border-color:#22c55e; background:#0a2a1a; }
+.answer-option.disabled { cursor:default; }
+.answer-letter {
+  min-width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+  border-radius:50%; background:#1a1f4e; color:#aaa; font-weight:700; font-size:0.85em; flex-shrink:0;
+}
+.answer-option.selected .answer-letter { background:#ff9900; color:#000; }
+.answer-option.correct .answer-letter { background:#22c55e; color:#fff; }
+.answer-option.incorrect .answer-letter { background:#ef4444; color:#fff; }
+.answer-option.show-correct .answer-letter { background:#22c55e; color:#fff; }
+.answer-text { font-size:0.95em; line-height:1.5; color:#ccc; }
+.explanation-box {
+  margin-top:20px; padding:20px; background:#0d1130;
+  border-radius:10px; border-left:4px solid #ff9900; display:none;
+}
+.explanation-box.visible { display:block; }
+.explanation-box h4 { color:#ff9900; margin-bottom:10px; font-size:0.9em; }
+.explanation-box p { font-size:0.9em; line-height:1.6; color:#aaa; }
+.answer-exp { font-size:0.85em; color:#888; margin-top:6px; font-style:italic; display:none; }
+.answer-exp.visible { display:block; }
+.nav-buttons { display:flex; justify-content:space-between; gap:12px; margin-top:20px; flex-wrap:wrap; }
+.btn {
+  padding:12px 28px; border:none; border-radius:8px;
+  font-size:0.95em; font-weight:600; cursor:pointer; transition:all 0.2s;
+}
+.btn-primary { background:#ff9900; color:#000; }
+.btn-primary:hover { background:#ffb84d; }
+.btn-secondary { background:#1a1f4e; color:#ccc; }
+.btn-secondary:hover { background:#2a2f6e; }
+.btn-danger { background:#ef4444; color:#fff; }
+.btn-danger:hover { background:#dc2626; }
+.btn:disabled { opacity:0.4; cursor:not-allowed; }
+.config-panel { background:#12163a; border-radius:12px; padding:30px; border:1px solid #1a1f4e; }
+.config-panel h2 { color:#ff9900; margin-bottom:20px; }
+.config-group { margin-bottom:20px; }
+.config-group label { display:block; color:#aaa; margin-bottom:8px; font-size:0.9em; }
+.config-group select, .config-group input[type=number] {
+  width:100%; padding:10px; background:#0a0e27; border:1px solid #2a2f5e;
+  color:#e0e0e0; border-radius:6px; font-size:0.95em;
+}
+.chip-group { display:flex; flex-wrap:wrap; gap:8px; }
+.chip {
+  display:flex; align-items:center; gap:6px; padding:8px 14px;
+  background:#0a0e27; border:1px solid #2a2f5e; border-radius:8px;
+  cursor:pointer; font-size:0.85em; color:#aaa; transition:all 0.2s; user-select:none;
+}
+.chip:hover { border-color:#ff9900; color:#ccc; }
+.chip.active { border-color:#ff9900; background:#1a1a3a; color:#ff9900; }
+.chip .count { font-size:0.8em; color:#666; margin-left:2px; }
+.cat-card {
+  background:#0a0e27; padding:14px; border-radius:10px;
+  border:1px solid #1a1f4e; cursor:pointer; transition:all 0.2s; text-align:center;
+}
+.cat-card:hover { border-color:#ff9900; transform:translateY(-2px); }
+.cat-icon { font-size:1.8em; margin-bottom:6px; }
+.cat-name { color:#ff9900; font-weight:600; font-size:0.9em; }
+.cat-count { color:#888; font-size:0.8em; margin-top:2px; }
+.results-panel { background:#12163a; border-radius:12px; padding:30px; border:1px solid #1a1f4e; text-align:center; }
+.results-panel h2 { color:#ff9900; font-size:1.8em; margin-bottom:20px; }
+.score-circle {
+  width:180px; height:180px; border-radius:50%; margin:0 auto 25px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  font-size:2.5em; font-weight:700;
+}
+.score-circle.pass { border:6px solid #22c55e; color:#22c55e; }
+.score-circle.fail { border:6px solid #ef4444; color:#ef4444; }
+.score-circle small { font-size:0.35em; color:#888; font-weight:400; }
+.results-stats { display:flex; justify-content:center; gap:30px; margin:20px 0; flex-wrap:wrap; }
+.results-stat { text-align:center; }
+.results-stat-value { font-size:1.5em; font-weight:700; }
+.results-stat-label { font-size:0.8em; color:#888; }
+.results-stat-value.green { color:#22c55e; }
+.results-stat-value.red { color:#ef4444; }
+.results-stat-value.yellow { color:#ff9900; }
+.q-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(42px,1fr)); gap:6px; margin:20px 0; }
+.q-grid-item {
+  aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+  border-radius:6px; font-size:0.8em; font-weight:600; cursor:pointer;
+  border:1px solid #2a2f5e; background:#0a0e27; color:#888; transition:all 0.2s;
+}
+.q-grid-item:hover { border-color:#ff9900; }
+.q-grid-item.current { border-color:#ff9900; color:#ff9900; }
+.q-grid-item.answered { background:#1a1f4e; color:#ccc; }
+.q-grid-item.correct-review { background:#0a2a1a; border-color:#22c55e; color:#22c55e; }
+.q-grid-item.incorrect-review { background:#2a0a0a; border-color:#ef4444; color:#ef4444; }
+.cat-results { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:20px 0; text-align:left; }
+.cat-result-item {
+  background:#0a0e27; padding:12px 16px; border-radius:8px; border:1px solid #1a1f4e;
+}
+.cat-result-name { font-size:0.85em; color:#aaa; margin-bottom:4px; }
+.cat-result-bar { height:6px; background:#1a1f4e; border-radius:3px; overflow:hidden; margin-top:6px; }
+.cat-result-fill { height:100%; border-radius:3px; transition:width 0.5s; }
+.cat-result-score { font-size:1.1em; font-weight:700; }
+@media (max-width:600px) {
+  .container { padding:10px; }
+  .question-card { padding:20px; }
+  .stats-bar { padding:10px 15px; }
+  .cat-results { grid-template-columns:1fr; }
+  .lang-switch { top:10px; right:10px; }
+}
+</style>
+<script>
+// ===== TRANSLATIONS =====
+const T = {
+  en: {
+    title: '☁️ AWS SAA-C03 Simulator',
+    subtitle: 'Solutions Architect Associate - Practice Exam',
+    startSim: '🎯 Start Simulation',
+    questionsAvailable: 'questions available from',
+    exerciseSets: 'exercise sets',
+    fullExam: 'Full Exam (65 questions)',
+    quick: 'Quick (30 questions)',
+    miniTest: 'Mini Test (10 questions)',
+    customize: '⚙️ Customize',
+    byCategory: '📂 By Category',
+    bySets: '📋 By Set',
+    set: 'Set',
+    questions: 'questions',
+    question: 'Question',
+    config: '⚙️ Configuration',
+    numQuestions: 'Number of questions',
+    exerciseSetsLabel: 'Exercise sets (leave empty for all)',
+    categories: 'Categories (leave empty for all)',
+    shuffleQuestions: 'Shuffle questions',
+    timerActive: 'Timer active',
+    minutes: 'minutes',
+    back: '← Back',
+    startSimulation: 'Start Simulation →',
+    answered: 'Answered',
+    timeRemaining: 'Time remaining',
+    time: 'Time',
+    confirm: 'Confirm ✓',
+    next: 'Next →',
+    previous: '← Previous',
+    finish: 'Finish',
+    finishConfirm: 'Do you want to finish the simulation?',
+    results: '📊 Results',
+    passed: 'PASSED',
+    failed: 'FAILED',
+    correct: 'Correct',
+    wrong: 'Wrong',
+    unanswered: 'Unanswered',
+    passingScore: 'Passing score: 72% (~48/65)',
+    reviewAnswers: '📋 Review Answers',
+    menu: '🏠 Menu',
+    review: 'Review',
+    answer: 'Answer',
+    explanation: '📖 Overall Explanation',
+    noExplanation: 'No additional explanation available.',
+    allCategories: 'All Categories',
+    categoryPerformance: 'Performance by Category',
+  },
+  it: {
+    title: '☁️ AWS SAA-C03 Simulatore',
+    subtitle: 'Solutions Architect Associate - Esame di Pratica',
+    startSim: '🎯 Inizia la Simulazione',
+    questionsAvailable: 'domande disponibili da',
+    exerciseSets: 'set di esercizi',
+    fullExam: 'Esame Completo (65 domande)',
+    quick: 'Rapido (30 domande)',
+    miniTest: 'Mini Test (10 domande)',
+    customize: '⚙️ Personalizza',
+    byCategory: '📂 Per Categoria',
+    bySets: '📋 Per Set',
+    set: 'Set',
+    questions: 'domande',
+    question: 'Domanda',
+    config: '⚙️ Configurazione',
+    numQuestions: 'Numero di domande',
+    exerciseSetsLabel: 'Set di esercizi (lascia vuoto per tutti)',
+    categories: 'Categorie (lascia vuoto per tutte)',
+    shuffleQuestions: 'Mescola domande',
+    timerActive: 'Timer attivo',
+    minutes: 'minuti',
+    back: '← Indietro',
+    startSimulation: 'Inizia Simulazione →',
+    answered: 'Risposte',
+    timeRemaining: 'Tempo rimasto',
+    time: 'Tempo',
+    confirm: 'Conferma ✓',
+    next: 'Prossima →',
+    previous: '← Precedente',
+    finish: 'Termina',
+    finishConfirm: 'Vuoi terminare la simulazione?',
+    results: '📊 Risultati',
+    passed: 'SUPERATO',
+    failed: 'NON SUPERATO',
+    correct: 'Corrette',
+    wrong: 'Errate',
+    unanswered: 'Non risposte',
+    passingScore: 'Soglia superamento: 72% (~48/65)',
+    reviewAnswers: '📋 Rivedi Risposte',
+    menu: '🏠 Menu',
+    review: 'Revisione',
+    answer: 'Risposta',
+    explanation: '📖 Spiegazione Generale',
+    noExplanation: 'Nessuna spiegazione aggiuntiva disponibile.',
+    allCategories: 'Tutte le Categorie',
+    categoryPerformance: 'Prestazioni per Categoria',
+  }
+};
+
+// ===== CATEGORY NORMALIZATION =====
+const CAT_MAP = {
+  'Storage': 'Storage',
+  'Serverless': 'Serverless',
+  'Security': 'Security',
+  'Security, Identity, and Compliance': 'Security',
+  'Compute': 'Compute',
+  'Databases': 'Databases',
+  'Database': 'Databases',
+  'Networking': 'Networking',
+  'Automation': 'Automation',
+  'Monitoring and Observability': 'Monitoring',
+  'Monitoring and Logging': 'Monitoring',
+  'Monitoring & Management': 'Monitoring',
+  'Monitoring': 'Monitoring',
+  'Cost Optimization': 'Cost Optimization',
+  'Disaster Recovery': 'Disaster Recovery',
+  'Management & Governance': 'Management & Governance',
+  'Management and Governance': 'Management & Governance',
+  'Application Integration': 'Application Integration',
+};
+
+const CAT_ICONS = {
+  'Storage': '💾', 'Serverless': '⚡', 'Security': '🔒',
+  'Compute': '🖥️', 'Databases': '🗄️', 'Networking': '🌐',
+  'Automation': '🤖', 'Monitoring': '📊', 'Cost Optimization': '💰',
+  'Disaster Recovery': '🔄', 'Management & Governance': '📋',
+  'Application Integration': '🔗',
+};
+
+function normCat(c) { return CAT_MAP[c] || c; }
+</script>
+<script>
+// ===== STATE =====
+let QUESTIONS_EN = [];
+let QUESTIONS_IT = [];
+let ALL_QUESTIONS = []; // active language questions
+let lang = 'en';
+let itAvailable = false;
+let state = {
+  view: 'menu',
+  questions: [],    // current quiz questions (indices into ALL_QUESTIONS)
+  qIndices: [],     // original indices to map between EN/IT
+  currentIndex: 0,
+  answers: {},
+  confirmed: {},
+  score: 0,
+  startTime: null,
+  elapsed: 0,
+  timerInterval: null,
+  config: { sources: [], categories: [], count: 65, shuffle: true, timed: true, timeLimit: 130 }
+};
+
+function t(key) { return T[lang][key] || T['en'][key] || key; }
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.includes(l.toUpperCase()));
+  });
+  ALL_QUESTIONS = (l === 'it' && itAvailable) ? QUESTIONS_IT : QUESTIONS_EN;
+  // Remap current quiz questions to new language (same indices)
+  if (state.qIndices.length > 0) {
+    state.questions = state.qIndices.map(i => ALL_QUESTIONS[i]);
+  }
+  render();
+}
+
+function prepareQuestions(data) {
+  return data.filter(q => q.answers.length >= 2 && q.has_correct)
+    .map(q => { q.category = normCat(q.category || 'Unknown'); return q; });
+}
+
+// Load both files at startup
+const app = document.getElementById('app');
+app.innerHTML = '<p style="text-align:center;color:#888;padding:40px;">⏳ Loading...</p>';
+
+fetch('questions.json')
+  .then(r => r.json())
+  .then(data => {
+    QUESTIONS_EN = prepareQuestions(data);
+    ALL_QUESTIONS = QUESTIONS_EN;
+    console.log(`EN: ${QUESTIONS_EN.length} questions`);
+    render();
+    // Load IT in background
+    return fetch('questions_it.json').then(r => r.ok ? r.json() : null).catch(() => null);
+  })
+  .then(dataIt => {
+    if (dataIt) {
+      QUESTIONS_IT = prepareQuestions(dataIt);
+      itAvailable = true;
+      console.log(`IT: ${QUESTIONS_IT.length} questions`);
+      if (lang === 'it') { ALL_QUESTIONS = QUESTIONS_IT; render(); }
+    }
+  })
+  .catch(e => {
+    app.innerHTML = `<p style="color:#ef4444;text-align:center;">Error: ${e.message}</p>`;
+  });
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function getCategories() {
+  const cats = {};
+  ALL_QUESTIONS.forEach(q => { cats[q.category] = (cats[q.category] || 0) + 1; });
+  return Object.entries(cats).sort((a, b) => b[1] - a[1]);
+}
+
+function getSources() {
+  return [...new Set(ALL_QUESTIONS.map(q => q.source))].sort((a, b) => {
+    return parseInt(a.split('-')[1]) - parseInt(b.split('-')[1]);
+  });
+}
+
+function startQuiz() {
+  // Build pool with original indices so we can remap on language switch
+  let poolWithIdx = ALL_QUESTIONS.map((q, i) => ({ q, i }));
+  if (state.config.sources.length > 0)
+    poolWithIdx = poolWithIdx.filter(x => state.config.sources.includes(x.q.source));
+  if (state.config.categories.length > 0)
+    poolWithIdx = poolWithIdx.filter(x => state.config.categories.includes(x.q.category));
+  if (state.config.shuffle) poolWithIdx = shuffle(poolWithIdx);
+  poolWithIdx = poolWithIdx.slice(0, state.config.count);
+  state.qIndices = poolWithIdx.map(x => x.i);
+  state.questions = poolWithIdx.map(x => x.q);
+  state.currentIndex = 0;
+  state.answers = {};
+  state.confirmed = {};
+  state.score = 0;
+  state.startTime = Date.now();
+  state.elapsed = 0;
+  state.view = 'quiz';
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(() => {
+    state.elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+    const el = document.getElementById('timer');
+    if (!el) return;
+    if (state.config.timed) {
+      const rem = Math.max(0, state.config.timeLimit * 60 - state.elapsed);
+      if (rem <= 0) { finishQuiz(); return; }
+      el.textContent = `${String(Math.floor(rem/60)).padStart(2,'0')}:${String(rem%60).padStart(2,'0')}`;
+    } else {
+      el.textContent = `${String(Math.floor(state.elapsed/60)).padStart(2,'0')}:${String(state.elapsed%60).padStart(2,'0')}`;
+    }
+  }, 1000);
+  render();
+}
+
+function finishQuiz() {
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  let correct = 0;
+  state.questions.forEach((q, i) => {
+    if (state.answers[i] !== undefined) {
+      const sel = q.answers[state.answers[i]];
+      if (sel && sel.correct) correct++;
+    }
+  });
+  state.score = correct;
+  state.view = 'results';
+  render();
+}
+
+function render() {
+  const app = document.getElementById('app');
+  switch (state.view) {
+    case 'menu': app.innerHTML = renderMenu(); break;
+    case 'config': app.innerHTML = renderConfig(); break;
+    case 'quiz': app.innerHTML = renderQuiz(); break;
+    case 'results': app.innerHTML = renderResults(); break;
+    case 'review': app.innerHTML = renderReview(); break;
+  }
+}
+</script>
+<script>
+// ===== RENDER MENU =====
+function renderMenu() {
+  const cats = getCategories();
+  const sources = getSources();
+  return `
+    <div class="config-panel">
+      <h2>${t('startSim')}</h2>
+      <p style="color:#888;margin-bottom:25px;">
+        ${ALL_QUESTIONS.length} ${t('questionsAvailable')} ${sources.length} ${t('exerciseSets')}
+      </p>
+      <div class="menu">
+        <button class="btn btn-primary" onclick="quickStart(65)">${t('fullExam')}</button>
+        <button class="btn btn-secondary" onclick="quickStart(30)">${t('quick')}</button>
+        <button class="btn btn-secondary" onclick="quickStart(10)">${t('miniTest')}</button>
+        <button class="btn btn-secondary" onclick="state.view='config';render()">${t('customize')}</button>
+      </div>
+
+      <h3 style="color:#ff9900;margin:25px 0 15px;">${t('byCategory')}</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:25px;">
+        ${cats.map(([cat, count]) => `
+          <div class="cat-card" onclick="startByCategory('${cat}')">
+            <div class="cat-icon">${CAT_ICONS[cat] || '📁'}</div>
+            <div class="cat-name">${cat}</div>
+            <div class="cat-count">${count} ${t('questions')}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <h3 style="color:#ff9900;margin:25px 0 15px;">${t('bySets')}</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;">
+        ${sources.map(s => {
+          const count = ALL_QUESTIONS.filter(q => q.source === s).length;
+          return `<div class="cat-card" onclick="startFromSource('${s}')">
+            <div style="color:#ff9900;font-weight:600;">${t('set')} ${s.split('-')[1]}</div>
+            <div class="cat-count">${count} ${t('questions')}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function quickStart(count) {
+  state.config.sources = [];
+  state.config.categories = [];
+  state.config.count = count;
+  state.config.shuffle = true;
+  state.config.timed = count >= 65;
+  state.config.timeLimit = 130;
+  startQuiz();
+}
+
+function startFromSource(source) {
+  state.config.sources = [source];
+  state.config.categories = [];
+  state.config.count = 999;
+  state.config.shuffle = false;
+  state.config.timed = false;
+  startQuiz();
+}
+
+function startByCategory(cat) {
+  state.config.sources = [];
+  state.config.categories = [cat];
+  state.config.count = 999;
+  state.config.shuffle = true;
+  state.config.timed = false;
+  startQuiz();
+}
+
+// ===== RENDER CONFIG =====
+function renderConfig() {
+  const sources = getSources();
+  const cats = getCategories();
+  return `
+    <div class="config-panel">
+      <h2>${t('config')}</h2>
+      <div class="config-group">
+        <label>${t('numQuestions')}</label>
+        <input type="number" id="cfg-count" value="${state.config.count}" min="1" max="${ALL_QUESTIONS.length}">
+      </div>
+      <div class="config-group">
+        <label>${t('categories')}</label>
+        <div class="chip-group">
+          ${cats.map(([cat, count]) => `
+            <div class="chip ${state.config.categories.includes(cat)?'active':''}"
+                 onclick="toggleCfgCat('${cat}')">
+              ${CAT_ICONS[cat]||'📁'} ${cat} <span class="count">(${count})</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="config-group">
+        <label>${t('exerciseSetsLabel')}</label>
+        <div class="chip-group">
+          ${sources.map(s => {
+            const count = ALL_QUESTIONS.filter(q => q.source === s).length;
+            return `<div class="chip ${state.config.sources.includes(s)?'active':''}"
+                        onclick="toggleCfgSource('${s}')">
+              ${t('set')} ${s.split('-')[1]} <span class="count">(${count})</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+      <div class="config-group" style="display:flex;align-items:center;gap:10px;">
+        <input type="checkbox" id="cfg-shuffle" ${state.config.shuffle?'checked':''} style="width:auto;">
+        <label for="cfg-shuffle" style="margin:0;">${t('shuffleQuestions')}</label>
+      </div>
+      <div class="config-group" style="display:flex;align-items:center;gap:10px;">
+        <input type="checkbox" id="cfg-timed" ${state.config.timed?'checked':''} style="width:auto;"
+               onchange="document.getElementById('cfg-time').style.display=this.checked?'flex':'none'">
+        <label for="cfg-timed" style="margin:0;">${t('timerActive')}</label>
+        <div id="cfg-time" style="display:${state.config.timed?'flex':'none'};align-items:center;gap:8px;margin-left:12px;">
+          <input type="number" id="cfg-timelimit" value="${state.config.timeLimit}" min="1" style="width:80px;"> ${t('minutes')}
+        </div>
+      </div>
+      <div class="nav-buttons">
+        <button class="btn btn-secondary" onclick="state.view='menu';render()">${t('back')}</button>
+        <button class="btn btn-primary" onclick="applyConfig()">${t('startSimulation')}</button>
+      </div>
+    </div>
+  `;
+}
+
+function toggleCfgCat(cat) {
+  const idx = state.config.categories.indexOf(cat);
+  if (idx >= 0) state.config.categories.splice(idx, 1);
+  else state.config.categories.push(cat);
+  render();
+}
+
+function toggleCfgSource(source) {
+  const idx = state.config.sources.indexOf(source);
+  if (idx >= 0) state.config.sources.splice(idx, 1);
+  else state.config.sources.push(source);
+  render();
+}
+
+function applyConfig() {
+  state.config.count = parseInt(document.getElementById('cfg-count').value) || 65;
+  state.config.shuffle = document.getElementById('cfg-shuffle').checked;
+  state.config.timed = document.getElementById('cfg-timed').checked;
+  if (state.config.timed)
+    state.config.timeLimit = parseInt(document.getElementById('cfg-timelimit').value) || 130;
+  startQuiz();
+}
+</script>
+<script>
+// ===== RENDER QUIZ =====
+function renderQuiz() {
+  const q = state.questions[state.currentIndex];
+  if (!q) return `<p>${t('questions')}: 0</p>`;
+  const answered = state.answers[state.currentIndex] !== undefined;
+  const confirmed = state.confirmed[state.currentIndex];
+  const totalAnswered = Object.keys(state.confirmed).length;
+  const progress = (totalAnswered / state.questions.length) * 100;
+
+  return `
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="stat-value">${state.currentIndex + 1}/${state.questions.length}</div>
+        <div class="stat-label">${t('question')}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">${totalAnswered}</div>
+        <div class="stat-label">${t('answered')}</div>
+      </div>
+      <div class="stat">
+        <div class="timer" id="timer">00:00</div>
+        <div class="stat-label">${state.config.timed ? t('timeRemaining') : t('time')}</div>
+      </div>
+    </div>
+    <div class="progress-container"><div class="progress-bar" style="width:${progress}%"></div></div>
+    <div class="q-grid">
+      ${state.questions.map((_, i) => {
+        let cls = i === state.currentIndex ? 'current' : state.confirmed[i] ? 'answered' : '';
+        return `<div class="q-grid-item ${cls}" onclick="goTo(${i})">${i+1}</div>`;
+      }).join('')}
+    </div>
+    <div class="question-card">
+      <span class="q-number">${t('question')} ${state.currentIndex + 1}</span>
+      <span class="q-source">${t('set')} ${q.source.split('-')[1]}</span>
+      <span class="q-category">${CAT_ICONS[q.category]||'📁'} ${q.category}</span>
+      <p class="q-text">${q.question}</p>
+      <div class="answers">
+        ${q.answers.map((a, i) => {
+          const letter = String.fromCharCode(65 + i);
+          let cls = '';
+          if (confirmed) {
+            if (a.correct) cls = 'correct show-correct';
+            else if (state.answers[state.currentIndex] === i) cls = 'incorrect';
+            cls += ' disabled';
+          } else if (state.answers[state.currentIndex] === i) cls = 'selected';
+          return `
+            <div class="answer-option ${cls}" onclick="${confirmed ? '' : `selectAns(${i})`}">
+              <div class="answer-letter">${letter}</div>
+              <div>
+                <div class="answer-text">${a.text}</div>
+                <div class="answer-exp ${confirmed ? 'visible' : ''}">${a.explanation || ''}</div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+      <div class="explanation-box ${confirmed ? 'visible' : ''}">
+        <h4>${t('explanation')}</h4>
+        <p>${q.overall_explanation || t('noExplanation')}</p>
+      </div>
+    </div>
+    <div class="nav-buttons">
+      <button class="btn btn-secondary" onclick="goTo(${state.currentIndex-1})" ${state.currentIndex===0?'disabled':''}>${t('previous')}</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        ${!confirmed && answered ? `<button class="btn btn-primary" onclick="confirmAns()">${t('confirm')}</button>` : ''}
+        ${confirmed && state.currentIndex < state.questions.length-1 ?
+          `<button class="btn btn-primary" onclick="goTo(${state.currentIndex+1})">${t('next')}</button>` : ''}
+        ${Object.keys(state.confirmed).length > 0 ?
+          `<button class="btn btn-danger" onclick="if(confirm('${t('finishConfirm')}'))finishQuiz()">${t('finish')}</button>` : ''}
+      </div>
+      <button class="btn btn-secondary" onclick="goTo(${state.currentIndex+1})" ${state.currentIndex>=state.questions.length-1?'disabled':''}>${t('next')}</button>
+    </div>
+  `;
+}
+
+function selectAns(i) { if (!state.confirmed[state.currentIndex]) { state.answers[state.currentIndex]=i; render(); } }
+function confirmAns() { state.confirmed[state.currentIndex]=true; render(); }
+function goTo(i) { if (i>=0 && i<state.questions.length) { state.currentIndex=i; render(); } }
+
+// ===== RENDER RESULTS =====
+function renderResults() {
+  const total = state.questions.length;
+  const answered = Object.keys(state.confirmed).length;
+  const pct = total > 0 ? Math.round((state.score / total) * 100) : 0;
+  const pass = pct >= 72;
+  const mins = Math.floor(state.elapsed / 60);
+  const secs = state.elapsed % 60;
+
+  // Category breakdown
+  const catStats = {};
+  state.questions.forEach((q, i) => {
+    if (!catStats[q.category]) catStats[q.category] = { total: 0, correct: 0 };
+    catStats[q.category].total++;
+    if (state.confirmed[i] && state.answers[i] !== undefined) {
+      const sel = q.answers[state.answers[i]];
+      if (sel && sel.correct) catStats[q.category].correct++;
+    }
+  });
+
+  return `
+    <div class="results-panel">
+      <h2>${t('results')}</h2>
+      <div class="score-circle ${pass?'pass':'fail'}">
+        ${pct}%
+        <small>${pass ? t('passed') : t('failed')}</small>
+      </div>
+      <div class="results-stats">
+        <div class="results-stat"><div class="results-stat-value green">${state.score}</div><div class="results-stat-label">${t('correct')}</div></div>
+        <div class="results-stat"><div class="results-stat-value red">${answered - state.score}</div><div class="results-stat-label">${t('wrong')}</div></div>
+        <div class="results-stat"><div class="results-stat-value yellow">${total - answered}</div><div class="results-stat-label">${t('unanswered')}</div></div>
+        <div class="results-stat"><div class="results-stat-value" style="color:#ccc;">${mins}m ${secs}s</div><div class="results-stat-label">${t('time')}</div></div>
+      </div>
+      <p style="color:#888;margin:15px 0;">${t('passingScore')}</p>
+
+      <h3 style="color:#ff9900;margin:25px 0 15px;">${t('categoryPerformance')}</h3>
+      <div class="cat-results">
+        ${Object.entries(catStats).sort((a,b)=>b[1].total-a[1].total).map(([cat, s]) => {
+          const cpct = s.total > 0 ? Math.round((s.correct/s.total)*100) : 0;
+          const color = cpct >= 72 ? '#22c55e' : cpct >= 50 ? '#ff9900' : '#ef4444';
+          return `<div class="cat-result-item">
+            <div class="cat-result-name">${CAT_ICONS[cat]||'📁'} ${cat}</div>
+            <div class="cat-result-score" style="color:${color}">${cpct}% <span style="font-size:0.7em;color:#888">(${s.correct}/${s.total})</span></div>
+            <div class="cat-result-bar"><div class="cat-result-fill" style="width:${cpct}%;background:${color}"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <div class="nav-buttons" style="justify-content:center;margin-top:25px;">
+        <button class="btn btn-primary" onclick="state.view='review';render()">${t('reviewAnswers')}</button>
+        <button class="btn btn-secondary" onclick="state.view='menu';render()">${t('menu')}</button>
+      </div>
+      <div class="q-grid" style="margin-top:25px;">
+        ${state.questions.map((q, i) => {
+          let cls = '';
+          if (state.confirmed[i]) {
+            const sel = q.answers[state.answers[i]];
+            cls = sel && sel.correct ? 'correct-review' : 'incorrect-review';
+          }
+          return `<div class="q-grid-item ${cls}" onclick="reviewQ(${i})">${i+1}</div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function reviewQ(i) { state.currentIndex = i; state.view = 'review'; render(); }
+
+// ===== RENDER REVIEW =====
+function renderReview() {
+  const q = state.questions[state.currentIndex];
+  if (!q) return '';
+  const ua = state.answers[state.currentIndex];
+  const wasCorrect = ua !== undefined && q.answers[ua] && q.answers[ua].correct;
+
+  return `
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="stat-value">${state.currentIndex+1}/${state.questions.length}</div>
+        <div class="stat-label">${t('review')}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" style="color:${wasCorrect?'#22c55e':'#ef4444'}">${wasCorrect ? '✓ '+t('correct') : '✗ '+t('wrong')}</div>
+        <div class="stat-label">${t('answer')}</div>
+      </div>
+    </div>
+    <div class="q-grid">
+      ${state.questions.map((qq, i) => {
+        let cls = i === state.currentIndex ? 'current' : '';
+        if (!cls && state.confirmed[i]) {
+          const sel = qq.answers[state.answers[i]];
+          cls = sel && sel.correct ? 'correct-review' : 'incorrect-review';
+        }
+        return `<div class="q-grid-item ${cls}" onclick="reviewQ(${i})">${i+1}</div>`;
+      }).join('')}
+    </div>
+    <div class="question-card">
+      <span class="q-number">${t('question')} ${state.currentIndex+1}</span>
+      <span class="q-source">${t('set')} ${q.source.split('-')[1]}</span>
+      <span class="q-category">${CAT_ICONS[q.category]||'📁'} ${q.category}</span>
+      <p class="q-text">${q.question}</p>
+      <div class="answers">
+        ${q.answers.map((a, i) => {
+          const letter = String.fromCharCode(65 + i);
+          let cls = 'disabled';
+          if (a.correct) cls += ' correct show-correct';
+          else if (ua === i) cls += ' incorrect';
+          return `
+            <div class="answer-option ${cls}">
+              <div class="answer-letter">${letter}</div>
+              <div>
+                <div class="answer-text">${a.text}</div>
+                <div class="answer-exp visible">${a.explanation || ''}</div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+      <div class="explanation-box visible">
+        <h4>${t('explanation')}</h4>
+        <p>${q.overall_explanation || t('noExplanation')}</p>
+      </div>
+    </div>
+    <div class="nav-buttons">
+      <button class="btn btn-secondary" onclick="reviewQ(${state.currentIndex-1})" ${state.currentIndex===0?'disabled':''}>${t('previous')}</button>
+      <button class="btn btn-primary" onclick="state.view='results';render()">${t('results')}</button>
+      <button class="btn btn-secondary" onclick="reviewQ(${state.currentIndex+1})" ${state.currentIndex>=state.questions.length-1?'disabled':''}>${t('next')}</button>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
