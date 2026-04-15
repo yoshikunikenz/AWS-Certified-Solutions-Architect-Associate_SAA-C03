@@ -41,6 +41,7 @@ body {
 <body>
 <div style="position:relative;">
   <div class="lang-switch">
+    <button class="lang-btn" onclick="backToMenu()" style="font-size:1.1em;padding:6px 10px;" title="Home">🏠</button>
     <button class="lang-btn active" onclick="setLang('en')">🇬🇧 EN</button>
     <button class="lang-btn" onclick="setLang('it')">🇮🇹 IT</button>
   </div>
@@ -249,6 +250,8 @@ const T = {
     noExplanation: 'No additional explanation available.',
     allCategories: 'All Categories',
     categoryPerformance: 'Performance by Category',
+    studiedTopics: '📚 Worked Topics',
+    topicsDesc: 'Cross-referenced notes from all books. Click to read.',
   },
   it: {
     title: '☁️ AWS SAA-C03 Simulatore',
@@ -297,6 +300,8 @@ const T = {
     noExplanation: 'Nessuna spiegazione aggiuntiva disponibile.',
     allCategories: 'Tutte le Categorie',
     categoryPerformance: 'Prestazioni per Categoria',
+    studiedTopics: '📚 Argomenti Lavorati',
+    topicsDesc: 'Appunti e riassunti incrociati dai libri. Clicca per leggere.',
   }
 };
 
@@ -373,7 +378,7 @@ function prepareQuestions(data) {
     .map(q => { q.category = normCat(q.category || 'Unknown'); return q; });
 }
 
-// Load both files at startup
+// Load questions at startup
 const app = document.getElementById('app');
 app.innerHTML = '<p style="text-align:center;color:#888;padding:40px;">⏳ Loading...</p>';
 
@@ -382,16 +387,13 @@ fetch('questions.json')
   .then(data => {
     QUESTIONS_EN = prepareQuestions(data);
     ALL_QUESTIONS = QUESTIONS_EN;
-    console.log(`EN: ${QUESTIONS_EN.length} questions`);
     render();
-    // Load IT in background
     return fetch('questions_it.json').then(r => r.ok ? r.json() : null).catch(() => null);
   })
   .then(dataIt => {
     if (dataIt) {
       QUESTIONS_IT = prepareQuestions(dataIt);
       itAvailable = true;
-      console.log(`IT: ${QUESTIONS_IT.length} questions`);
       if (lang === 'it') { ALL_QUESTIONS = QUESTIONS_IT; render(); }
     }
   })
@@ -476,6 +478,7 @@ function render() {
     case 'quiz': app.innerHTML = renderQuiz(); break;
     case 'results': app.innerHTML = renderResults(); break;
     case 'review': app.innerHTML = renderReview(); break;
+    case 'topic': app.innerHTML = renderTopic(); break;
   }
 }
 </script>
@@ -518,6 +521,8 @@ function renderMenu() {
           </div>`;
         }).join('')}
       </div>
+
+      ${renderTopicsSection()}
     </div>
   `;
 }
@@ -773,6 +778,152 @@ function renderResults() {
 }
 
 function reviewQ(i) { state.currentIndex = i; state.view = 'review'; render(); }
+
+// ===== WORKED TOPICS =====
+const TOPICS = [
+  { file: '00_Well-Architected-Framework', title: 'Well Architected Framework' }
+];
+let topicsCache = {};
+let currentTopicFile = '';
+
+function renderTopicsSection() {
+  if (TOPICS.length === 0) return '';
+  return `
+    <h3 style="color:#ff9900;margin:25px 0 15px;">${t('studiedTopics')}</h3>
+    <p style="color:#888;margin-bottom:15px;font-size:0.9em;">${t('topicsDesc')}</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:25px;">
+      ${TOPICS.map((topic, i) => {
+        const badge = String(i).padStart(2, '0');
+        return `<div class="cat-card" onclick="openTopic(${i})" style="text-align:left;padding:16px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="min-width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+                        border-radius:50%;background:#ff990022;color:#ff9900;font-weight:700;font-size:0.9em;">
+              ${badge}
+            </div>
+            <div>
+              <div style="color:#ff9900;font-weight:600;font-size:0.95em;">${topic.title}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+async function openTopic(index) {
+  const topic = TOPICS[index];
+  if (!topic) return;
+  currentTopicFile = topic.file;
+
+  if (!topicsCache[topic.file]) {
+    topicsCache[topic.file] = { it: null, en: null };
+    try {
+      const r1 = await fetch('topics/' + topic.file + '.md');
+      if (r1.ok) topicsCache[topic.file].it = await r1.text();
+    } catch(e) {}
+    try {
+      const r2 = await fetch('topics/' + topic.file + '_en.md');
+      if (r2.ok) topicsCache[topic.file].en = await r2.text();
+    } catch(e) {}
+  }
+
+  state.view = 'topic';
+  window.scrollTo({ top: 0 });
+  render();
+}
+
+function getTopicContent() {
+  if (!currentTopicFile) return '# No topic loaded';
+  const cached = topicsCache[currentTopicFile];
+  if (!cached) return '# Error\n\nTopic not loaded.';
+  if (lang === 'en' && cached.en) return cached.en;
+  if (lang === 'it' && cached.it) return cached.it;
+  return cached.it || cached.en || '# Error\n\nCould not load topic.';
+}
+
+function renderTopic() {
+  const content = getTopicContent();
+  const html = markdownToHtml(content);
+  const cached = topicsCache[currentTopicFile] || {};
+  const hasEn = !!cached.en;
+  const hasIt = !!cached.it;
+
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+      <button class="btn btn-secondary" onclick="backToMenu()">← Menu</button>
+      ${(hasEn && hasIt) ? `
+        <div style="display:flex;gap:4px;background:#12163a;border-radius:8px;padding:4px;border:1px solid #1a1f4e;">
+          <button class="btn" style="padding:6px 14px;font-size:0.85em;border-radius:6px;border:none;cursor:pointer;
+            ${lang==='it' ? 'background:#ff9900;color:#000;font-weight:600;' : 'background:transparent;color:#888;'}"
+            onclick="setLang('it');render()">🇮🇹 IT</button>
+          <button class="btn" style="padding:6px 14px;font-size:0.85em;border-radius:6px;border:none;cursor:pointer;
+            ${lang==='en' ? 'background:#ff9900;color:#000;font-weight:600;' : 'background:transparent;color:#888;'}"
+            onclick="setLang('en');render()">🇬🇧 EN</button>
+        </div>
+      ` : `
+        <span style="color:#666;font-size:0.8em;">${lang === 'it' ? '🇮🇹 Solo italiano' : (hasEn ? '🇬🇧 English only' : '🇮🇹 Italian only')}</span>
+      `}
+    </div>
+    <div class="question-card" style="padding:35px 40px;">
+      <div class="topic-content">${html}</div>
+    </div>
+    <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
+      <button class="btn btn-secondary" onclick="backToMenu()">← Menu</button>
+      <button class="btn btn-secondary" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ Top</button>
+    </div>
+  `;
+}
+
+function backToMenu() {
+  state.view = 'menu';
+  window.scrollTo({ top: 0 });
+  render();
+}
+
+function markdownToHtml(md) {
+  let html = md;
+  // Code blocks
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre style="background:#0a0e27;padding:16px;border-radius:8px;overflow-x:auto;border:1px solid #1a1f4e;margin:16px 0;"><code>$2</code></pre>');
+  // Tables
+  html = html.replace(/^(\|.+\|)\n(\|[-| :]+\|)\n((?:\|.+\|\n?)*)/gm, function(match, header, sep, body) {
+    const thCells = header.split('|').filter(c => c.trim()).map(c =>
+      `<th style="padding:10px 14px;text-align:left;border-bottom:2px solid #ff990066;color:#ff9900;font-size:0.85em;">${c.trim()}</th>`
+    ).join('');
+    const rows = body.trim().split('\n').map(row => {
+      const cells = row.split('|').filter(c => c.trim()).map(c =>
+        `<td style="padding:8px 14px;border-bottom:1px solid #1a1f4e;font-size:0.9em;color:#ccc;">${c.trim()}</td>`
+      ).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+    return `<div style="overflow-x:auto;margin:16px 0;"><table style="width:100%;border-collapse:collapse;background:#0d1130;border-radius:8px;overflow:hidden;"><thead><tr>${thCells}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  });
+  // Headers
+  html = html.replace(/^#### (.+)$/gm, '<h4 style="color:#ccc;margin:20px 0 8px;font-size:1em;">$1</h4>');
+  html = html.replace(/^### (.+)$/gm, '<h3 style="color:#ff9900;margin:28px 0 12px;font-size:1.15em;border-bottom:1px solid #1a1f4e;padding-bottom:8px;">$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2 style="color:#ff9900;margin:32px 0 16px;font-size:1.35em;border-bottom:2px solid #ff990044;padding-bottom:10px;">$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1 style="color:#ff9900;margin:0 0 20px;font-size:1.6em;">$1</h1>');
+  // Blockquotes
+  html = html.replace(/^> (.+)$/gm, '<div style="border-left:4px solid #ff9900;padding:12px 16px;margin:16px 0;background:#0d1130;border-radius:0 8px 8px 0;color:#ccc;font-size:0.92em;">$1</div>');
+  // Bold and italic
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong style="color:#e8e8f0;">$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code style="background:#1a1f4e;padding:2px 6px;border-radius:4px;font-size:0.88em;color:#ffb84d;">$1</code>');
+  // Horizontal rules
+  html = html.replace(/^---$/gm, '<hr style="border:none;border-top:1px solid #1a1f4e;margin:30px 0;">');
+  // Unordered lists
+  html = html.replace(/^- (.+)$/gm, '<li style="margin:6px 0;color:#ccc;font-size:0.93em;line-height:1.6;">$1</li>');
+  html = html.replace(/((?:<li[^>]*>.*<\/li>\n?)+)/g, '<ul style="padding-left:20px;margin:12px 0;">$1</ul>');
+  // Ordered lists
+  html = html.replace(/^\d+\. (.+)$/gm, '<li style="margin:6px 0;color:#ccc;font-size:0.93em;line-height:1.6;">$1</li>');
+  // Paragraphs
+  html = html.replace(/^(?!<[a-z/])((?!^\s*$).+)$/gm, function(match) {
+    if (match.trim() === '') return match;
+    return `<p style="margin:10px 0;line-height:1.7;color:#ccc;font-size:0.93em;">${match}</p>`;
+  });
+  html = html.replace(/\n{3,}/g, '\n\n');
+  return html;
+}
 
 // ===== RENDER REVIEW =====
 function renderReview() {
