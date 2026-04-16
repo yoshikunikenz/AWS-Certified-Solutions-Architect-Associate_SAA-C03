@@ -8,7 +8,6 @@ Materiale di studio e simulatore d'esame per la certificazione **AWS Solutions A
 |----------|-----------|
 | `simulator/` | Simulatore d'esame con 1006 domande estratte da 16 set di esercizi |
 | `worked_topics/` | Appunti e schede di studio per argomento |
-| `STUDY_GUIDE_SAA-C03.md` | Guida di studio incrociata — mappa ogni argomento dell'esame ai capitoli specifici di ogni risorsa |
 
 ## 🎮 Exam Simulator
 
@@ -47,15 +46,6 @@ python3 extract_final2.py
 pip install deep-translator
 python3 translate_simple.py
 ```
-
-## 📚 Guida di Studio
-
-Il file `STUDY_GUIDE_SAA-C03.md` mappa ogni argomento dell'esame ai capitoli specifici delle risorse di studio, organizzato per dominio:
-
-- **Dominio 1** — Design Secure Architectures (30%)
-- **Dominio 2** — Design Resilient Architectures (26%)
-- **Dominio 3** — Design High-Performing Architectures (24%)
-- **Dominio 4** — Design Cost-Optimized Architectures (20%)
 
 ## 🔗 Risorse Utili
 

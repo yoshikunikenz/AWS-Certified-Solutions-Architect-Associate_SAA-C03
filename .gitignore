@@ -7,6 +7,9 @@ dispense/
 # PDF esercizi sorgente (le domande sono già in questions.json)
 simulator/eser-*.pdf
 
+# Documenti locali (guide di studio, appunti privati)
+not-push/
+
 # OS files
 .DS_Store
 Thumbs.db
