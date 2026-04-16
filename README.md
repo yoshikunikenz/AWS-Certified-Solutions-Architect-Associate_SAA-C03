@@ -6,7 +6,6 @@ Materiale di studio e simulatore d'esame per la certificazione **AWS Solutions A
 
 | Cartella | Contenuto |
 |----------|-----------|
-| `dispense/` | 8 dispense PDF per argomento (Storage, Compute, Networking, Databases, Security, Serverless, Monitoring, Cost Optimization) |
 | `simulator/` | Simulatore d'esame con 1006 domande estratte da 16 set di esercizi |
 | `worked_topics/` | Appunti e schede di studio per argomento |
 | `STUDY_GUIDE_SAA-C03.md` | Guida di studio incrociata — mappa ogni argomento dell'esame ai capitoli specifici di ogni risorsa |

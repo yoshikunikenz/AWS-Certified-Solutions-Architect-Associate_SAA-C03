@@ -1,6 +1,12 @@
 # Ebooks - contenuti protetti da copyright
 ebooks/
 
+# Dispense PDF
+dispense/
+
+# PDF esercizi sorgente (le domande sono già in questions.json)
+simulator/eser-*.pdf
+
 # OS files
 .DS_Store
 Thumbs.db
