@@ -781,7 +781,26 @@ function reviewQ(i) { state.currentIndex = i; state.view = 'review'; render(); }
 
 // ===== WORKED TOPICS =====
 const TOPICS = [
-  { file: '00_Well-Architected-Framework', title: 'Well Architected Framework' }
+  { file: '00_Well-Architected-Framework', title: 'Well Architected Framework' },
+  { file: '01_IAM', title: 'IAM - Identity and Access Management' },
+  { file: '02_VPC_Security', title: 'VPC Security - SG, NACLs, Endpoints' },
+  { file: '03_Encryption_KMS_Secrets', title: 'Encryption, KMS, Secrets' },
+  { file: '04_WAF_Shield_Firewall', title: 'WAF, Shield, Network Firewall' },
+  { file: '05_Threat_Detection', title: 'Threat Detection - GuardDuty, Inspector, Macie' },
+  { file: '06_Organizations_MultiAccount', title: 'Organizations & Multi-Account' },
+  { file: '07_Shared_Responsibility_Data_Protection', title: 'Shared Responsibility & Data Protection' },
+  { file: '08_EC2', title: 'EC2 - Instance Types, Auto Scaling' },
+  { file: '09_S3', title: 'S3 - Storage Classes, Lifecycle' },
+  { file: '10_Databases', title: 'Databases - RDS, Aurora, DynamoDB' },
+  { file: '11_EBS_EFS_FSx', title: 'EBS, EFS, FSx - Block & File Storage' },
+  { file: '12_CloudFront_Route53', title: 'CloudFront, Route 53, Global Accelerator' },
+  { file: '13_Data_Analytics', title: 'Data Analytics - Kinesis, Athena, Glue' },
+  { file: '14_ELB_HA', title: 'ELB & High Availability' },
+  { file: '15_DR_MultiAZ', title: 'Disaster Recovery & Multi-AZ' },
+  { file: '16_Decoupling_Serverless', title: 'Decoupling & Serverless' },
+  { file: '17_Cost_Optimization', title: 'Cost Optimization' },
+  { file: '18_Monitoring_IaC_Migration', title: 'Monitoring, IaC, Migration' },
+  { file: '19_EXAM_Keywords_Patterns', title: '🎯 Exam Keywords & Patterns' },
 ];
 let topicsCache = {};
 let currentTopicFile = '';

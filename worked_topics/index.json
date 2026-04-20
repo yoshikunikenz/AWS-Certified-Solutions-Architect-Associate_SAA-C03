@@ -1,0 +1,22 @@
+[
+  "00_Well-Architected-Framework.md",
+  "01_IAM.md",
+  "02_VPC_Security.md",
+  "03_Encryption_KMS_Secrets.md",
+  "04_WAF_Shield_Firewall.md",
+  "05_Threat_Detection.md",
+  "06_Organizations_MultiAccount.md",
+  "07_Shared_Responsibility_Data_Protection.md",
+  "08_EC2.md",
+  "09_S3.md",
+  "10_Databases.md",
+  "11_EBS_EFS_FSx.md",
+  "12_CloudFront_Route53.md",
+  "13_Data_Analytics.md",
+  "14_ELB_HA.md",
+  "15_DR_MultiAZ.md",
+  "16_Decoupling_Serverless.md",
+  "17_Cost_Optimization.md",
+  "18_Monitoring_IaC_Migration.md",
+  "19_EXAM_Keywords_Patterns.md"
+]
