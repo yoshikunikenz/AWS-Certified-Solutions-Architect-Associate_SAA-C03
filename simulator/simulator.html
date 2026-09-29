@@ -109,7 +109,9 @@ body {
 .answer-option.correct .answer-letter { background:#22c55e; color:#fff; }
 .answer-option.incorrect .answer-letter { background:#ef4444; color:#fff; }
 .answer-option.show-correct .answer-letter { background:#22c55e; color:#fff; }
+.answer-letter.multi { border-radius:6px; }
 .answer-text { font-size:0.95em; line-height:1.5; color:#ccc; }
+.select-hint { color:#ff9900; font-size:0.85em; margin:-8px 0 12px; }
 .explanation-box {
   margin-top:20px; padding:20px; background:#0d1130;
   border-radius:10px; border-left:4px solid #ff9900; display:none;
@@ -248,6 +250,8 @@ const T = {
     answer: 'Answer',
     explanation: '📖 Overall Explanation',
     noExplanation: 'No additional explanation available.',
+    selectN: 'Select {n} answers',
+    sourcePdfNote: '📎 This question references a diagram from the source material.',
     allCategories: 'All Categories',
     categoryPerformance: 'Performance by Category',
     studiedTopics: '📚 Worked Topics',
@@ -298,6 +302,8 @@ const T = {
     answer: 'Risposta',
     explanation: '📖 Spiegazione Generale',
     noExplanation: 'Nessuna spiegazione aggiuntiva disponibile.',
+    selectN: 'Seleziona {n} risposte',
+    sourcePdfNote: '📎 Questa domanda fa riferimento a un diagramma del materiale originale.',
     allCategories: 'Tutte le Categorie',
     categoryPerformance: 'Prestazioni per Categoria',
     studiedTopics: '📚 Argomenti Lavorati',
@@ -336,6 +342,23 @@ const CAT_ICONS = {
 };
 
 function normCat(c) { return CAT_MAP[c] || c; }
+
+// Escaping HTML: i dati vengono da PDF di terze parti (blocchi di codice JSON in alcune
+// domande contengono < > &) e sono interpolati via innerHTML — senza escaping quei
+// caratteri verrebbero interpretati come markup.
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+// Punteggio tutto-o-nulla: `sel` (array di indici) deve combaciare esattamente con
+// l'insieme delle opzioni corrette, come nell'esame reale per le domande "Choose N".
+function isQuestionCorrect(q, sel) {
+  sel = sel || [];
+  const want = q.answers.reduce((acc, a, j) => a.correct ? [...acc, j] : acc, []);
+  return sel.length === want.length && want.every(j => sel.includes(j));
+}
 </script>
 <script>
 // ===== STATE =====
@@ -366,9 +389,12 @@ function setLang(l) {
     b.classList.toggle('active', b.textContent.includes(l.toUpperCase()));
   });
   ALL_QUESTIONS = (l === 'it' && itAvailable) ? QUESTIONS_IT : QUESTIONS_EN;
-  // Remap current quiz questions to new language (same indices)
+  // Remap current quiz questions to new language (same indices). questions_it.json non e'
+  // ancora stato rigenerato dall'EN corretto (fase successiva) e puo' avere meno elementi:
+  // se l'indice manca in IT, resta la domanda nella lingua precedente invece di andare in
+  // undefined e far crashare il render.
   if (state.qIndices.length > 0) {
-    state.questions = state.qIndices.map(i => ALL_QUESTIONS[i]);
+    state.questions = state.qIndices.map((i, idx) => ALL_QUESTIONS[i] || state.questions[idx]);
   }
   render();
 }
@@ -460,10 +486,7 @@ function finishQuiz() {
   if (state.timerInterval) clearInterval(state.timerInterval);
   let correct = 0;
   state.questions.forEach((q, i) => {
-    if (state.answers[i] !== undefined) {
-      const sel = q.answers[state.answers[i]];
-      if (sel && sel.correct) correct++;
-    }
+    if (state.confirmed[i] && isQuestionCorrect(q, state.answers[i])) correct++;
   });
   state.score = correct;
   state.view = 'results';
@@ -503,9 +526,9 @@ function renderMenu() {
       <h3 style="color:#ff9900;margin:25px 0 15px;">${t('byCategory')}</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:25px;">
         ${cats.map(([cat, count]) => `
-          <div class="cat-card" onclick="startByCategory('${cat}')">
+          <div class="cat-card" data-cat="${esc(cat)}" onclick="startByCategory(this.dataset.cat)">
             <div class="cat-icon">${CAT_ICONS[cat] || '📁'}</div>
-            <div class="cat-name">${cat}</div>
+            <div class="cat-name">${esc(cat)}</div>
             <div class="cat-count">${count} ${t('questions')}</div>
           </div>
         `).join('')}
@@ -571,8 +594,8 @@ function renderConfig() {
         <div class="chip-group">
           ${cats.map(([cat, count]) => `
             <div class="chip ${state.config.categories.includes(cat)?'active':''}"
-                 onclick="toggleCfgCat('${cat}')">
-              ${CAT_ICONS[cat]||'📁'} ${cat} <span class="count">(${count})</span>
+                 data-cat="${esc(cat)}" onclick="toggleCfgCat(this.dataset.cat)">
+              ${CAT_ICONS[cat]||'📁'} ${esc(cat)} <span class="count">(${count})</span>
             </div>
           `).join('')}
         </div>
@@ -637,7 +660,11 @@ function applyConfig() {
 function renderQuiz() {
   const q = state.questions[state.currentIndex];
   if (!q) return `<p>${t('questions')}: 0</p>`;
-  const answered = state.answers[state.currentIndex] !== undefined;
+  const needed = q.correct_count || 1;
+  const multi = needed > 1;
+  const sel = state.answers[state.currentIndex] || [];
+  const answered = sel.length > 0;
+  const complete = sel.length === needed;
   const confirmed = state.confirmed[state.currentIndex];
   const totalAnswered = Object.keys(state.confirmed).length;
   const progress = (totalAnswered / state.questions.length) * 100;
@@ -667,36 +694,38 @@ function renderQuiz() {
     <div class="question-card">
       <span class="q-number">${t('question')} ${state.currentIndex + 1}</span>
       <span class="q-source">${t('set')} ${q.source.split('-')[1]}</span>
-      <span class="q-category">${CAT_ICONS[q.category]||'📁'} ${q.category}</span>
-      <p class="q-text">${q.question}</p>
+      <span class="q-category">${CAT_ICONS[q.category]||'📁'} ${esc(q.category)}</span>
+      <p class="q-text">${esc(q.question)}</p>
+      ${multi ? `<p class="select-hint">${t('selectN').replace('{n}', needed)}</p>` : ''}
+      ${q.has_image ? `<p class="select-hint">${t('sourcePdfNote')}</p>` : ''}
       <div class="answers">
         ${q.answers.map((a, i) => {
           const letter = String.fromCharCode(65 + i);
           let cls = '';
           if (confirmed) {
             if (a.correct) cls = 'correct show-correct';
-            else if (state.answers[state.currentIndex] === i) cls = 'incorrect';
+            else if (sel.includes(i)) cls = 'incorrect';
             cls += ' disabled';
-          } else if (state.answers[state.currentIndex] === i) cls = 'selected';
+          } else if (sel.includes(i)) cls = 'selected';
           return `
             <div class="answer-option ${cls}" onclick="${confirmed ? '' : `selectAns(${i})`}">
-              <div class="answer-letter">${letter}</div>
+              <div class="answer-letter ${multi ? 'multi' : ''}">${letter}</div>
               <div>
-                <div class="answer-text">${a.text}</div>
-                <div class="answer-exp ${confirmed ? 'visible' : ''}">${a.explanation || ''}</div>
+                <div class="answer-text">${esc(a.text)}</div>
+                <div class="answer-exp ${confirmed ? 'visible' : ''}">${esc(a.explanation || '')}</div>
               </div>
             </div>`;
         }).join('')}
       </div>
       <div class="explanation-box ${confirmed ? 'visible' : ''}">
         <h4>${t('explanation')}</h4>
-        <p>${q.overall_explanation || t('noExplanation')}</p>
+        <p>${esc(q.overall_explanation) || t('noExplanation')}</p>
       </div>
     </div>
     <div class="nav-buttons">
       <button class="btn btn-secondary" onclick="goTo(${state.currentIndex-1})" ${state.currentIndex===0?'disabled':''}>${t('previous')}</button>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        ${!confirmed && answered ? `<button class="btn btn-primary" onclick="confirmAns()">${t('confirm')}</button>` : ''}
+        ${!confirmed && complete ? `<button class="btn btn-primary" onclick="confirmAns()">${t('confirm')}</button>` : ''}
         ${confirmed && state.currentIndex < state.questions.length-1 ?
           `<button class="btn btn-primary" onclick="goTo(${state.currentIndex+1})">${t('next')}</button>` : ''}
         ${Object.keys(state.confirmed).length > 0 ?
@@ -707,7 +736,18 @@ function renderQuiz() {
   `;
 }
 
-function selectAns(i) { if (!state.confirmed[state.currentIndex]) { state.answers[state.currentIndex]=i; render(); } }
+function selectAns(i) {
+  const ci = state.currentIndex;
+  if (state.confirmed[ci]) return;
+  const q = state.questions[ci];
+  const n = q.correct_count || 1;
+  let sel = state.answers[ci] || [];
+  if (n === 1) sel = [i];
+  else if (sel.includes(i)) sel = sel.filter(x => x !== i);
+  else if (sel.length < n) sel = [...sel, i].sort((a, b) => a - b);
+  state.answers[ci] = sel;
+  render();
+}
 function confirmAns() { state.confirmed[state.currentIndex]=true; render(); }
 function goTo(i) { if (i>=0 && i<state.questions.length) { state.currentIndex=i; render(); } }
 
@@ -725,10 +765,7 @@ function renderResults() {
   state.questions.forEach((q, i) => {
     if (!catStats[q.category]) catStats[q.category] = { total: 0, correct: 0 };
     catStats[q.category].total++;
-    if (state.confirmed[i] && state.answers[i] !== undefined) {
-      const sel = q.answers[state.answers[i]];
-      if (sel && sel.correct) catStats[q.category].correct++;
-    }
+    if (state.confirmed[i] && isQuestionCorrect(q, state.answers[i])) catStats[q.category].correct++;
   });
 
   return `
@@ -752,7 +789,7 @@ function renderResults() {
           const cpct = s.total > 0 ? Math.round((s.correct/s.total)*100) : 0;
           const color = cpct >= 72 ? '#22c55e' : cpct >= 50 ? '#ff9900' : '#ef4444';
           return `<div class="cat-result-item">
-            <div class="cat-result-name">${CAT_ICONS[cat]||'📁'} ${cat}</div>
+            <div class="cat-result-name">${CAT_ICONS[cat]||'📁'} ${esc(cat)}</div>
             <div class="cat-result-score" style="color:${color}">${cpct}% <span style="font-size:0.7em;color:#888">(${s.correct}/${s.total})</span></div>
             <div class="cat-result-bar"><div class="cat-result-fill" style="width:${cpct}%;background:${color}"></div></div>
           </div>`;
@@ -767,8 +804,7 @@ function renderResults() {
         ${state.questions.map((q, i) => {
           let cls = '';
           if (state.confirmed[i]) {
-            const sel = q.answers[state.answers[i]];
-            cls = sel && sel.correct ? 'correct-review' : 'incorrect-review';
+            cls = isQuestionCorrect(q, state.answers[i]) ? 'correct-review' : 'incorrect-review';
           }
           return `<div class="q-grid-item ${cls}" onclick="reviewQ(${i})">${i+1}</div>`;
         }).join('')}
@@ -948,8 +984,8 @@ function markdownToHtml(md) {
 function renderReview() {
   const q = state.questions[state.currentIndex];
   if (!q) return '';
-  const ua = state.answers[state.currentIndex];
-  const wasCorrect = ua !== undefined && q.answers[ua] && q.answers[ua].correct;
+  const ua = state.answers[state.currentIndex] || [];
+  const wasCorrect = isQuestionCorrect(q, ua);
 
   return `
     <div class="stats-bar">
@@ -966,8 +1002,7 @@ function renderReview() {
       ${state.questions.map((qq, i) => {
         let cls = i === state.currentIndex ? 'current' : '';
         if (!cls && state.confirmed[i]) {
-          const sel = qq.answers[state.answers[i]];
-          cls = sel && sel.correct ? 'correct-review' : 'incorrect-review';
+          cls = isQuestionCorrect(qq, state.answers[i]) ? 'correct-review' : 'incorrect-review';
         }
         return `<div class="q-grid-item ${cls}" onclick="reviewQ(${i})">${i+1}</div>`;
       }).join('')}
@@ -975,27 +1010,27 @@ function renderReview() {
     <div class="question-card">
       <span class="q-number">${t('question')} ${state.currentIndex+1}</span>
       <span class="q-source">${t('set')} ${q.source.split('-')[1]}</span>
-      <span class="q-category">${CAT_ICONS[q.category]||'📁'} ${q.category}</span>
-      <p class="q-text">${q.question}</p>
+      <span class="q-category">${CAT_ICONS[q.category]||'📁'} ${esc(q.category)}</span>
+      <p class="q-text">${esc(q.question)}</p>
       <div class="answers">
         ${q.answers.map((a, i) => {
           const letter = String.fromCharCode(65 + i);
           let cls = 'disabled';
           if (a.correct) cls += ' correct show-correct';
-          else if (ua === i) cls += ' incorrect';
+          else if (ua.includes(i)) cls += ' incorrect';
           return `
             <div class="answer-option ${cls}">
-              <div class="answer-letter">${letter}</div>
+              <div class="answer-letter ${(q.correct_count||1) > 1 ? 'multi' : ''}">${letter}</div>
               <div>
-                <div class="answer-text">${a.text}</div>
-                <div class="answer-exp visible">${a.explanation || ''}</div>
+                <div class="answer-text">${esc(a.text)}</div>
+                <div class="answer-exp visible">${esc(a.explanation || '')}</div>
               </div>
             </div>`;
         }).join('')}
       </div>
       <div class="explanation-box visible">
         <h4>${t('explanation')}</h4>
-        <p>${q.overall_explanation || t('noExplanation')}</p>
+        <p>${esc(q.overall_explanation) || t('noExplanation')}</p>
       </div>
     </div>
     <div class="nav-buttons">

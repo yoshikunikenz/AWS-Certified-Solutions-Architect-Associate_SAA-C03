@@ -6,7 +6,7 @@ Materiale di studio e simulatore d'esame per la certificazione **AWS Solutions A
 
 | Cartella | Contenuto |
 |----------|-----------|
-| `simulator/` | Simulatore d'esame con 1006 domande estratte da 16 set di esercizi |
+| `simulator/` | Simulatore d'esame con 1017 domande estratte da 16 set di esercizi |
 | `worked_topics/` | Appunti e schede di studio per argomento |
 
 ## 🎮 Exam Simulator
@@ -28,6 +28,7 @@ python3 -m http.server 8080
 - 🇬🇧/🇮🇹 Cambio lingua (domande + interfaccia)
 - 📂 Filtro per categoria (Storage, Security, Networking, Compute, Databases, ecc.)
 - 📋 Filtro per set di esercizi (1-16)
+- ☑️ Domande multi-risposta ("Choose two/three") con punteggio tutto-o-nulla, come l'esame reale
 - ⏱️ Timer configurabile (default 130 min come esame reale)
 - ✅ Correzione immediata con spiegazione
 - 📊 Risultati con breakdown per categoria
@@ -35,17 +36,20 @@ python3 -m http.server 8080
 
 ### Rigenerare le domande (opzionale)
 
+I PDF sorgente non sono nel repo ma restano recuperabili dalla history di git. Vedi
+[simulator/README.md](simulator/README.md#provenienza-dei-dati) per il dettaglio su come i dati
+vengono estratti (font/colore/posizione del PDF, non euristiche sulla prosa) e validati.
+
 ```bash
 pip install pdfplumber
-python3 extract_final2.py
+cd simulator
+python3 extract_questions.py --from-git 4625480^ -o questions.json
+python3 validate_questions.py questions.json
 ```
 
-### Rigenerare la traduzione italiana (opzionale)
+### Rigenerare la traduzione italiana
 
-```bash
-pip install deep-translator
-python3 translate_simple.py
-```
+Vedi [simulator/README.md](simulator/README.md#rigenerare-la-traduzione-italiana).
 
 ## 🔗 Risorse Utili
 
